@@ -2,6 +2,7 @@
 #include "ide_listener.h"
 #include "xml_listener.h"
 #include "cute_runner.h"
+#include <map>
 
 namespace {
 using namespace std::string_literals;
@@ -11,24 +12,28 @@ const auto TALISKER = "Talisker"s;
 
 struct Warehouse {
 	int getInventory(std::string const& s) const {
-		return int();
+		auto it= wh.find(s);
+		return (it != wh.end())?it->second:0;
 	}
 
 	void remove(std::string const & s, int i) {
+		wh[s]-=i;
 	}
 
 	void add(std::string const & s, int i) {
+		wh[s]+=i;
 	}
 
 	bool hasInventory(const std::string& s, int i) const {
-		return bool();
+		return getInventory(s)>=i;
 	}
+	std::map<std::string,int> wh{};
 };
 
 /// TDD Warehouse
 void WarehouseHasInventory(){
 	Warehouse warehouse{};
-	ASSERT(not warehouse.hasInventory("Talisker"s,50));
+	ASSERT(not warehouse.hasInventory(TALISKER,50));
 }
 void WarehouseAdd(){
 	Warehouse warehouse{};
@@ -76,15 +81,10 @@ void OrderFillFromWarehouse(){
 
 
 
-////
-void thisIsATest() {
-	ASSERTM("start writing tests", false);	
-}
 
 bool runAllTests(int argc, char const *argv[]) {
 	cute::suite s { };
 	//TODO add your test here
-	s.push_back(CUTE(thisIsATest));
 	s.push_back(CUTE(WarehouseHasInventory));
 	s.push_back(CUTE(WarehouseRemove));
 	s.push_back(CUTE(WarehouseAdd));
