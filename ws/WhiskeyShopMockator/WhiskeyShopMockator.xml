@@ -1,5 +1,5 @@
 <testsuites>
-	<testsuite name="AllTests" tests="12">
+	<testsuite name="AllTests" tests="13">
 		<testcase classname="AllTests" name="WarehouseHasInventory"/>
 		<testcase classname="AllTests" name="WarehouseRemove"/>
 		<testcase classname="AllTests" name="WarehouseAdd"/>
@@ -11,10 +11,15 @@
 		<testcase classname="AllTests" name="WarehouseAdd"/>
 		<testcase classname="AllTests" name="WarehouseGetInventory"/>
 		<testcase classname="AllTests" name="OrderCtor"/>
-		<testcase classname="AllTests" name="OrderFillFromWarehouse">
-			<failure message="../src/Test.cpp:204 OrderFillFromWarehouse: expectedMockWarehouse == allCalls[1] expected:	[\nMockWarehouse()\nhasInventory(const std::string&amp;, int) const,Talisker,50\nremove(const std::string&amp;, int) const,Talisker,50\n]	but was:	[\nMockWarehouse()\nhasInventory(const std::string&amp;, int) const,Talisker,50\n]	">
-OrderFillFromWarehouse: expectedMockWarehouse == allCalls[1] expected:	[\nMockWarehouse()\nhasInventory(const std::string&amp;, int) const,Talisker,50\nremove(const std::string&amp;, int) const,Talisker,50\n]	but was:	[\nMockWarehouse()\nhasInventory(const std::string&amp;, int) const,Talisker,50\n]	
+		<testcase classname="AllTests" name="OrderFillFromWarehouse"/>
+		<testcase classname="AllTests" name="UnfulfilledOrderSendsEmailIfMailerIsSet"/>
+	</testsuite>
+	<testsuite name="OOMockTests" tests="2">
+		<testcase classname="OOMockTests" name="thisIsAOOMockTestsTest">
+			<failure message="../src/OOMockTests.cpp:89 thisIsAOOMockTestsTest: start writing tests">
+thisIsAOOMockTestsTest: start writing tests
 			</failure>
 		</testcase>
+		<testcase classname="OOMockTests" name="OrderFillFromWarehouse"/>
 	</testsuite>
 </testsuites>

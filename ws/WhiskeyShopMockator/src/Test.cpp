@@ -5,6 +5,7 @@
 #include <map>
 
 #include "mockator.h"
+#include "OOMockTests.h"
 namespace {
 using namespace std::string_literals;
 
@@ -139,12 +140,18 @@ void WarehouseGetInventory(){
 	warehouse.add(TALISKER,50);
 	ASSERT_EQUAL(50,warehouse.getInventory(TALISKER));
 }
+struct Mailer{
+	virtual void send(std::string const &)=0;
+	virtual int numberOfSentMessages() const =0;
+};
 ///TDD Order
 template<typename T1 = Warehouse> struct OrderT {
 	void fill(T1& warehouse) {
 		if (warehouse.hasInventory(what, howmany)) {
 			warehouse.remove(what, howmany);
 			setFilled();
+		} else if (theMailer){
+			theMailer->send("please order: "+what);
 		}
 	}
 
@@ -153,7 +160,9 @@ template<typename T1 = Warehouse> struct OrderT {
 	}
 
 	OrderT(std::string const & whisky, int i) :	what { whisky }, howmany { i } {	}
-
+	void setMailer(Mailer *mailer){
+		theMailer=mailer;
+	}
 private:
 	void setFilled() {
 		filled = true;
@@ -162,6 +171,7 @@ private:
 	std::string const what;
 	int const howmany;
 	bool filled {};
+	Mailer *theMailer{};
 };
 using Order = OrderT<>;
 
@@ -186,7 +196,7 @@ void OrderFillFromWarehouse(){
 
 		bool hasInventory(std::string const & what, int howmany) const {
 			allCalls[mock_id].push_back(call("hasInventory(const std::string&, int) const", what, howmany));
-			return bool();
+			return true; // non-empty
 		}
 
 		void remove(std::string const & what, int howmany) const {
@@ -196,7 +206,7 @@ void OrderFillFromWarehouse(){
 	MockWarehouse warehouse { };
 	OrderT<MockWarehouse> order(TALISKER,50);
 	order.fill(warehouse);
-	ASSERT(not order.isFilled());
+	ASSERT( order.isFilled());
 	calls expectedMockWarehouse{
 		call("MockWarehouse()"),
 		call("hasInventory(const std::string&, int) const", TALISKER,50),
@@ -213,17 +223,30 @@ struct MockWarehouse {
 	void remove(std::string const & what, int howmany) const {
 	}
 };
+struct MailServiceStub : Mailer {
+	void send(std::string const &) {
+		++numberOfMessages;
+	}
+
+	int numberOfSentMessages() const {
+		return numberOfMessages;
+	}
+	int numberOfMessages{};
+};
 
 void UnfulfilledOrderSendsEmailIfMailerIsSet(){
-	OrderT<MockWarehouse> order(TALISKER,51);
 	MockWarehouse wh{};
+	MailServiceStub mailer{};
+	OrderT<MockWarehouse> order(TALISKER,51);
+	order.setMailer(&mailer);
 	order.fill(wh);
-	ASSERTM("start writing tests", false);
+	ASSERT_EQUAL(1,mailer.numberOfSentMessages());
 }
 
 
 
 }
+
 
 
 bool runAllTests(int argc, char const *argv[]) {
@@ -249,7 +272,9 @@ bool runAllTests(int argc, char const *argv[]) {
 	cute::xml_file_opener xmlfile(argc, argv);
 	cute::xml_listener<cute::ide_listener<>> lis(xmlfile.out);
 	auto runner = cute::makeRunner(lis, argc, argv);
-	bool success = runner(s, "AllTests");
+	bool success = runner(s, "AllTests");	cute::suite OOMockTests = make_suite_OOMockTests();
+	success &= runner(OOMockTests, "OOMockTests");
+
 	return success;
 }
 

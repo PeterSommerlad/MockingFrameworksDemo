@@ -73,7 +73,7 @@ const auto TALISKER = "Talisker"s;
 }
 
 
-namespace OO{
+namespace OO_version{
 struct Warehouse {
 	virtual ~Warehouse()=default;
 	virtual int getInventory(std::string const& s) const {
@@ -118,11 +118,14 @@ void WarehouseGetInventory(){
 ///TDD Order
 struct Order {
 	void fill(Warehouse& warehouse) {
-		 warehouse.hasInventory(w, howmany);
+		 if (warehouse.hasInventory(w, howmany)){
+			 warehouse.remove(w,howmany);
+			 filled=true;
+		 }
 	}
 
 	bool isFilled() const {
-		return bool();
+		return filled;
 	}
 
 	Order(std::string const & whisky, int i) :w{whisky},howmany{i}{
@@ -130,6 +133,7 @@ struct Order {
 private:
 	std::string w;
 	int howmany;
+	bool filled{};
 };
 
 void OrderCtor(){
@@ -144,16 +148,32 @@ void OrderFillFromWarehouse(){
 }
 
 struct MockWarehouse:Warehouse{
+	MAKE_CONST_MOCK1(getInventory, int(std::string const&),override);
+	MAKE_MOCK2(remove, void(std::string const&,int),override);
+	MAKE_MOCK2(add, void(std::string const&,int),override);
 	MAKE_CONST_MOCK2(hasInventory,bool(std::string const &,int),override);
 };
 
 void testMockingWithTrompeloeil(){
 	MockWarehouse wh;
-	REQUIRE_CALL(wh,hasInventory(TALISKER,50)).RETURN(false).TIMES(2);
+	//REQUIRE_CALL(wh,hasInventory(TALISKER,50)).RETURN(false).TIMES(1);
+	ALLOW_CALL(wh,hasInventory(TALISKER,50)).RETURN(false);
 	Order order(TALISKER,50);
 	order.fill(wh);
 	ASSERT(not order.isFilled());
 }
+void testFulledOrderWithTrompeloeil(){
+	MockWarehouse wh{};
+	trompeloeil::sequence seq{};
+	REQUIRE_CALL(wh,hasInventory(TALISKER,50)).RETURN(true).TIMES(1).IN_SEQUENCE(seq);
+	REQUIRE_CALL(wh,remove(TALISKER,50)).TIMES(1).IN_SEQUENCE(seq);
+	Order order(TALISKER,50);
+	order.fill(wh);
+	ASSERT(order.isFilled());
+}
+
+
+
 }
 
 cute::test_failure prepare_trompeloeil_failure(char const * const file, unsigned long line, std::string msg) {
@@ -171,19 +191,20 @@ cute::test_failure prepare_trompeloeil_failure(char const * const file, unsigned
 		}
 	}
 	transform(msg.begin(),msg.end(),msg.begin(),[](auto c){if (c=='\n') return ' ';return c;});
-	return { msg, f.c_str(), int(line) };
+	return {msg, f.c_str(), static_cast<int>(line)};
 }
 
 bool runAllTests(int argc, char const *argv[]) {
 	cute::suite s { };
 	//TODO add your test here
-	s.push_back(CUTE(OO::WarehouseHasInventory));
-	s.push_back(CUTE(OO::WarehouseRemove));
-	s.push_back(CUTE(OO::WarehouseAdd));
-	s.push_back(CUTE(OO::WarehouseGetInventory));
-	s.push_back(CUTE(OO::testMockingWithTrompeloeil));
-	s.push_back(CUTE(OO::OrderCtor));
-	s.push_back(CUTE(OO::OrderFillFromWarehouse));
+	s.push_back(CUTE(OO_version::WarehouseHasInventory));
+	s.push_back(CUTE(OO_version::WarehouseRemove));
+	s.push_back(CUTE(OO_version::WarehouseAdd));
+	s.push_back(CUTE(OO_version::WarehouseGetInventory));
+	s.push_back(CUTE(OO_version::testMockingWithTrompeloeil));
+	s.push_back(CUTE(OO_version::testFulledOrderWithTrompeloeil));
+	s.push_back(CUTE(OO_version::OrderCtor));
+	s.push_back(CUTE(OO_version::OrderFillFromWarehouse));
 	cute::xml_file_opener xmlfile(argc, argv);
 	cute::xml_listener<cute::ide_listener_trompeloeil<>> lis(xmlfile.out);
 
